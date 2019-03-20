@@ -14,6 +14,7 @@ std::ifstream FAT32Img;
 
 void signalHandler(int signum);
 
+
 int main(){
     std::string commandLineInput;
     std::signal(SIGINT, signalHandler);
@@ -27,19 +28,6 @@ int main(){
         if(tokenizedInput[0] == "exit" || tokenizedInput[0] == "quit"){
             exit(0);
         }
-        else if(tokenizedInput[0] == "open"){
-            FAT32Img.open(tokenizedInput[1]);      
-        }
-        else if(tokenizedInput[0] == "close"){
-            FAT32Img.close();
-        }
-
-        /*
-        for(int i = 0; i < tokenizedInput.size(); ++i){
-            std::cout << tokenizedInput[i] << std::endl;
-        }
-        */
-
     }
     return 0;
 }
