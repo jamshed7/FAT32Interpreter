@@ -4,46 +4,44 @@
 #include <boost/algorithm/string.hpp>
 #include <vector>
 #include <csignal>
+#include <fstream>
 
 #define maxCommandSize 255
 #define maxNumArguments 5
 #define whitespace " \t\n"
 
-using namespace std;
+std::ifstream FAT32Img;
 
 void signalHandler(int signum);
 
-
 int main(){
     std::string commandLineInput;
-    signal(SIGINT, signalHandler);
-    signal(SIGTSTP, signalHandler);
-    
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGTSTP, signalHandler);
+
     while(true){
         std::cout << "mfs>";
         std::getline(std::cin,commandLineInput);
-        vector<std::string> tokenizedInput;
+        std::vector<std::string> tokenizedInput;
         boost::split(tokenizedInput, commandLineInput, boost::is_any_of(whitespace));
+        if(tokenizedInput[0] == "exit" || tokenizedInput[0] == "quit"){
+            exit(0);
+        }
+        else if(tokenizedInput[0] == "open"){
+            FAT32Img.open(tokenizedInput[1]);      
+        }
+        else if(tokenizedInput[0] == "close"){
+            FAT32Img.close();
+        }
 
+        /*
         for(int i = 0; i < tokenizedInput.size(); ++i){
             std::cout << tokenizedInput[i] << std::endl;
         }
-
+        */
 
     }
     return 0;
 }
 
-void signalHandler(int signum){
-    switch(signum){
-        case SIGINT:
-            //std::cout << "SIGINT" << std::endl;
-            break;
-        case SIGTSTP:
-            //std::cout << "SIGTSTP" << std::endl;
-            break;
-        default:
-            //std::cout << "Unrecognized" << std::endl;
-            break;
-    }
-}
+void signalHandler(int signum){}
