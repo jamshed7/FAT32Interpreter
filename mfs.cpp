@@ -79,7 +79,12 @@ int main(){
           fseek(fp, 11, SEEK_SET);
           fread(&BPB_BytsPerSec, 2, 1, fp);
 
+          fseek(fp, 14, SEEK_SET);
+          fread(&BPB_RsvdSecCnt, 2, 1, fp);
+
+          printf("                Decimal\t Hex\n");
           printf("BPB_BytsPerSec: %d \t %x\n", BPB_BytsPerSec, BPB_BytsPerSec);
+          printf("BPB_RsvdSecCnt: %d \t %x\n", BPB_RsvdSecCnt, BPB_RsvdSecCnt);
         }
 
     }
