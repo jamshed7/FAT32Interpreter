@@ -85,12 +85,12 @@ int main(){
           fseek(fp, 36, SEEK_SET);
           fread(&BPB_FATSz32, 4, 1, fp);
 
-          printf("                 Decimal\t Hex\n");
-          printf("BPB_BytsPerSec:  %d \t %x\n", BPB_BytsPerSec, BPB_BytsPerSec);
-          printf("BPB_SecPerClus:  %d \t %x\n", BPB_SecPerClus, BPB_SecPerClus);
-          printf("BPB_RsvdSecCnt:  %d \t %x\n", BPB_RsvdSecCnt, BPB_RsvdSecCnt);
-          printf("BPB_NumFATs:     %d \t %x\n", BPB_NumFATs, BPB_NumFATs);
-          printf("BPB_FATSz32:     %d \t %x\n", BPB_FATSz32, BPB_FATSz32);
+          printf("                 Decimal  Hexadecimal\n");
+          printf("BPB_BytsPerSec:  %d \t  %x\n", BPB_BytsPerSec, BPB_BytsPerSec);
+          printf("BPB_SecPerClus:  %d \t  %x\n", BPB_SecPerClus, BPB_SecPerClus);
+          printf("BPB_RsvdSecCnt:  %d \t  %x\n", BPB_RsvdSecCnt, BPB_RsvdSecCnt);
+          printf("BPB_NumFATs:     %d \t  %x\n", BPB_NumFATs, BPB_NumFATs);
+          printf("BPB_FATSz32:     %d \t  %x\n", BPB_FATSz32, BPB_FATSz32);
         }
 
     }
