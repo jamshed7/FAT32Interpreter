@@ -73,6 +73,21 @@ int16_t NextLB( uint32_t sector){
 	return val;
 }
 
+bool caseInsensitiveCompare(std::string A, std::string B){
+  if(A.size() != B.size()){
+    return false;
+  }
+  else{
+    for(int i = 0; i < A.size(); ++i){
+      if(std::tolower(A[i]) != std::tolower(B[i])){
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 
 int main(){
     std::string commandLineInput;
@@ -81,6 +96,7 @@ int main(){
 
 		bool file_is_open = false;
 
+    
 
     while(true){
 
