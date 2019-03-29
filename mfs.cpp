@@ -84,8 +84,6 @@ int main(){
 
     while(true){
 
-        int directory_address;//////////may need to be global
-
         std::cout << "mfs>";
         std::getline(std::cin,commandLineInput);
         std::vector<std::string> tokenizedInput;
@@ -123,7 +121,7 @@ int main(){
           fread(&BS_VolLab, 11, 1, fp);
 
 					fseek(fp, 17, SEEK_SET);
-          fread(&BPB_RootEntCnt, 2, 1, fp);		//may not be used
+          fread(&BPB_RootEntCnt, 2, 1, fp);		//always 0 for FAT32
 
 					fseek(fp, 44, SEEK_SET);
           fread(&BPB_RootClus, 4, 1, fp);			//may not be used
@@ -149,10 +147,12 @@ int main(){
 					//info ends here
 
           //specify root directory address
-          directory_address = 1049600;
+          int directory_address = 1049600;
           fseek( fp, directory_address, SEEK_SET );
-					//read the contents of the cluster
-          for( int i = 0 ; i < 16 ; i++ )						//this section code might also need to be in cd
+
+					//	read the contents of the cluster
+					//	intialize DirectoryEntry structs
+          for( int i = 0 ; i < 16 ; i++ )
   				{
   					memset(&dir[i],0,32);
   					fread(&dir[i],32,1,fp);
@@ -174,9 +174,6 @@ int main(){
           printf("BPB_RsvdSecCnt:  %d \t  %x\n", BPB_RsvdSecCnt, BPB_RsvdSecCnt);
           printf("BPB_NumFATs:     %d \t  %x\n", BPB_NumFATs, BPB_NumFATs);
           printf("BPB_FATSz32:     %d \t  %x\n", BPB_FATSz32, BPB_FATSz32);
-
-					printf("\n\nBPB_RootEntCnt:  %d \t  %x\n", BPB_FATSz32, BPB_FATSz32);
-
         }
 
 
