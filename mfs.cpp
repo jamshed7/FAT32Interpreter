@@ -19,8 +19,8 @@
 
 #define dot "."
 
+void signalHandler(int signum);
 
-//std::ifstream FAT32Img;
 std::FILE* fp;
 
 uint16_t BPB_RsvdSecCnt;
@@ -28,6 +28,15 @@ uint16_t BPB_BytsPerSec;
 uint8_t BPB_SecPerClus;
 uint32_t BPB_FATSz32;
 uint8_t BPB_NumFATs;
+
+char BS_OEMName[8];
+int16_t BPB_RootEntCnt;
+char BS_VolLab[11];
+int32_t BPB_RootClus;
+
+int32_t RootDirSectors = 0;
+int32_t FirstDataSector = 0;
+int32_t FirstSectorofCluster = 0;
 
 //directory struct from FAT32 layout slide
 struct  __attribute__((__packed__)) DirectoryEntry
@@ -43,23 +52,26 @@ struct  __attribute__((__packed__)) DirectoryEntry
 struct DirectoryEntry dir[16];
 
 
-
-
-void signalHandler(int signum);
-
-
-/*
-//function to read file name
-bool read_filename( std::string fileName ){
-  std::vector<std::string> fname;
-  boost::split(fname, fileName, boost::is_any_of(dot));
-
-  std:: cout << "File name : " + fname[0] + " Format: " + fname[1] << std::endl;
-
-  return true;
-
+//Reference: FAT32.pdf
+//	Returns the starting address of a block of data given the sector number
+//	corresponding to that data block
+int LBAToOffset (int32_t sector){
+	return (( sector -2 ) * BPB_BytsPerSec) + (BPB_BytsPerSec * BPB_RsvdSecCnt)
+					+ (BPB_NumFATs * BPB_FATSz32 * BPB_BytsPerSec);
 }
-*/
+
+
+//Reference: FAT32.pdf
+//	Given a logical block address, look up into the first FAT and return the
+//	logical block address of the block in the file
+//	Return -1 if when no further blocks to return
+int16_t NextLB( uint32_t sector){
+	uint32_t FATAddress = ( BPB_BytsPerSec * BPB_RsvdSecCnt ) + ( sector * 4 );
+	int16_t val;
+	fseek(fp, FATAddress, SEEK_SET);
+	fread(&val, 2, 1, fp);
+	return val;
+}
 
 
 int main(){
