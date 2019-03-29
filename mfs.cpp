@@ -152,10 +152,12 @@ int main(){
 
 									char temp[12];
 									memset(temp, 0, 12);
+									// size 12 to accomodate NULL terminator
 									strncpy(temp, dir[i].DIR_Name, 11);
+									//convert back to string for printing
 									std::string name = temp;
 
-                  if( !name.empty() ){
+                  if(!name.empty()){
                     std::cout << i << ": " + name << std::endl;
                   }
                 }
