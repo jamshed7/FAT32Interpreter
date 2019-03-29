@@ -79,6 +79,8 @@ int main(){
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTSTP, signalHandler);
 
+		bool file_is_open = false;
+
 
     while(true){
 
@@ -98,6 +100,12 @@ int main(){
         //Open file command
         if(tokenizedInput[0] == "open"){
 
+					if (file_is_open){
+						std::cout << "Error: A file is already open!" << '\n';
+						continue;
+					}
+					file_is_open = true;
+
           fp = std::fopen(tokenizedInput[1].c_str(), "r");
 
           if(fp == NULL){
@@ -107,25 +115,24 @@ int main(){
             printf("FAT32 image file sucessfully opened.\n");
           }
 
-          //seek to root
-          directory_address = 1049600;
-          fseek( fp, directory_address, SEEK_SET );
-          for( int i = 0 ; i < 16 ; i++ )
-  				{
-  					memset(&dir[i],0,32);
-  					fread(&dir[i],32,1,fp);
-  				}
+					//Get values for all our Variables
+					fseek(fp, 3, SEEK_SET);
+          fread(&BS_OEMName, 8, 1, fp);
 
-        }
+					fseek(fp, 71, SEEK_SET);
+          fread(&BS_VolLab, 11, 1, fp);
 
-        //Close file command
-        if (tokenizedInput[0] == "close"){
-          std::fclose(fp);
-        }
+					fseek(fp, 17, SEEK_SET);
+          fread(&BPB_RootEntCnt, 2, 1, fp);		//may not be used
 
-        //Info Command
-        if(tokenizedInput[0] == "info"){
-          fseek(fp, 11, SEEK_SET);
+					fseek(fp, 44, SEEK_SET);
+          fread(&BPB_RootClus, 4, 1, fp);			//may not be used
+
+					//The following needs to be displayed in info command
+					fseek(fp, 11, SEEK_SET);
+          fread(&BPB_BytsPerSec, 2, 1, fp);
+
+					fseek(fp, 11, SEEK_SET);
           fread(&BPB_BytsPerSec, 2, 1, fp);
 
           fseek(fp, 13, SEEK_SET);
@@ -139,20 +146,39 @@ int main(){
 
           fseek(fp, 36, SEEK_SET);
           fread(&BPB_FATSz32, 4, 1, fp);
+					//info ends here
 
+          //specify root directory address
+          directory_address = 1049600;
+          fseek( fp, directory_address, SEEK_SET );
+					//read the contents of the cluster
+          for( int i = 0 ; i < 16 ; i++ )						//this section code might also need to be in cd
+  				{
+  					memset(&dir[i],0,32);
+  					fread(&dir[i],32,1,fp);
+  				}
+
+        }
+
+        //Close file command
+        if (tokenizedInput[0] == "close"){
+          std::fclose(fp);
+					file_is_open = false;
+        }
+
+        //Info Command
+        if(tokenizedInput[0] == "info"){
           printf("                 Decimal  Hexadecimal\n");
           printf("BPB_BytsPerSec:  %d \t  %x\n", BPB_BytsPerSec, BPB_BytsPerSec);
           printf("BPB_SecPerClus:  %d \t  %x\n", BPB_SecPerClus, BPB_SecPerClus);
           printf("BPB_RsvdSecCnt:  %d \t  %x\n", BPB_RsvdSecCnt, BPB_RsvdSecCnt);
           printf("BPB_NumFATs:     %d \t  %x\n", BPB_NumFATs, BPB_NumFATs);
           printf("BPB_FATSz32:     %d \t  %x\n", BPB_FATSz32, BPB_FATSz32);
+
+					printf("\n\nBPB_RootEntCnt:  %d \t  %x\n", BPB_FATSz32, BPB_FATSz32);
+
         }
 
-        /*
-        if( tokenizedInput[0] == "test"){
-          read_filename("Jamshed.txt");
-        }
-        */
 
         //ls command
         if( tokenizedInput[0] == "ls" ){
