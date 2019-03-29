@@ -17,6 +17,8 @@
 #define maxNumArguments 5
 #define whitespace " \t\n"
 
+#define dot "."
+
 
 //std::ifstream FAT32Img;
 std::FILE* fp;
@@ -27,10 +29,37 @@ uint8_t BPB_SecPerClus;
 uint32_t BPB_FATSz32;
 uint8_t BPB_NumFATs;
 
+//directory struct from FAT32 layout slide
+struct  __attribute__((__packed__)) DirectoryEntry
+{
+	char              DIR_Name[11];
+	uint8_t           DIR_Attr;
+	uint8_t           Unused1[8];
+	uint16_t          DIR_FirstClusterHigh;
+	uint8_t           Unused2[4];
+	uint16_t          DIR_FirstClusterLow;
+	uint32_t          DIR_FileSize;
+};
+struct DirectoryEntry dir[16];
+
 
 
 
 void signalHandler(int signum);
+
+
+/*
+//function to read file name
+bool read_filename( std::string fileName ){
+  std::vector<std::string> fname;
+  boost::split(fname, fileName, boost::is_any_of(dot));
+
+  std:: cout << "File name : " + fname[0] + " Format: " + fname[1] << std::endl;
+
+  return true;
+
+}
+*/
 
 
 int main(){
@@ -40,6 +69,9 @@ int main(){
 
 
     while(true){
+
+        int directory_address;//////////may need to be global
+
         std::cout << "mfs>";
         std::getline(std::cin,commandLineInput);
         std::vector<std::string> tokenizedInput;
@@ -53,6 +85,7 @@ int main(){
 
         //Open file command
         if(tokenizedInput[0] == "open"){
+
           fp = std::fopen(tokenizedInput[1].c_str(), "r");
 
           if(fp == NULL){
@@ -61,6 +94,16 @@ int main(){
           else{
             printf("FAT32 image file sucessfully opened.\n");
           }
+
+          //seek to root
+          directory_address = 1049600;
+          fseek( fp, directory_address, SEEK_SET );
+          for( int i = 0 ; i < 16 ; i++ )
+  				{
+  					memset(&dir[i],0,32);
+  					fread(&dir[i],32,1,fp);
+  				}
+
         }
 
         //Close file command
@@ -92,6 +135,32 @@ int main(){
           printf("BPB_NumFATs:     %d \t  %x\n", BPB_NumFATs, BPB_NumFATs);
           printf("BPB_FATSz32:     %d \t  %x\n", BPB_FATSz32, BPB_FATSz32);
         }
+
+        /*
+        if( tokenizedInput[0] == "test"){
+          read_filename("Jamshed.txt");
+        }
+        */
+
+        //ls command
+        if( tokenizedInput[0] == "ls" ){
+
+          for( int i = 0; i < 16; i++ ){
+
+            if( (dir[i].DIR_Attr == 1 || dir[i].DIR_Attr == 16 ||
+                dir[i].DIR_Attr == 32) && (dir[i].DIR_Name[0] != 0) ){
+
+									char temp[12];
+									memset(temp, 0, 12);
+									strncpy(temp, dir[i].DIR_Name, 11);
+									std::string name = temp;
+
+                  if( !name.empty() ){
+                    std::cout << i << ": " + name << std::endl;
+                  }
+                }
+          }
+        }//ls ends here
 
     }
     return 0;
