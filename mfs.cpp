@@ -99,7 +99,7 @@ int main(){
         if(tokenizedInput[0] == "open"){
 
 					if (file_is_open){
-						std::cout << "Error: A file is already open!" << '\n';
+						std::cout << "Error: File system image already open." << '\n';
 						continue;
 					}
 					file_is_open = true;
@@ -110,7 +110,7 @@ int main(){
             printf("Error: FAT32 image file not found!\n");
           }
           else{
-            printf("FAT32 image file sucessfully opened.\n");
+            printf("FAT32 image file sucessfully opened.\n");				//remove later on2
           }
 
 					//Get values for all our Variables
@@ -146,12 +146,14 @@ int main(){
           fread(&BPB_FATSz32, 4, 1, fp);
 					//info ends here
 
-          //specify root directory address
-          int directory_address = 1049600;
+					//	initialize a variable to store the address of current working directory
+          //	when image is first opened set current directory to root address
+					int root_address = 1049600;
+          int directory_address = root_address;
           fseek( fp, directory_address, SEEK_SET );
 
 					//	read the contents of the cluster
-					//	intialize DirectoryEntry structs
+					//	& intialize DirectoryEntry struct
           for( int i = 0 ; i < 16 ; i++ )
   				{
   					memset(&dir[i],0,32);
@@ -198,6 +200,24 @@ int main(){
                 }
           }
         }//ls ends here
+
+				if( tokenizedInput[0] == "cd" ){
+
+					if( tokenizedInput[1] == "~" || tokenizedInput[1] == "~/" ){
+						directory_address = root_address;
+					}
+
+					std::string new_directory = tokenizedInput[1];
+					std::string current_directory;
+
+					//loop through to see if we get a match with existing directories
+					for(int i = 0; i < 16; i++){
+						current_directory = dir[i].DIR_Name;
+						if( new_directory == current_directory ){
+							directory_address = LBAToOffset(dir[i].DIR_FirstClusterLow);
+						}
+					}
+				}
 
     }
     return 0;
