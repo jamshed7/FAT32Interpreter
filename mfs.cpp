@@ -233,6 +233,7 @@ int main(){
 					for(int i = 0; i < 16; i++){
 						current_directory = dir[i].DIR_Name;
 						if( new_directory == current_directory ){
+							std::cout<<"\n\n I am INSIDE \n\n" << std::endl;
 							directory_address = LBAToOffset(dir[i].DIR_FirstClusterLow);
 						}
 					}
@@ -244,6 +245,38 @@ int main(){
   				}
 
 				}
+
+				//stat command
+				if( tokenizedInput[0] == "stat" ){
+
+					std::string name = tokenizedInput[1];
+					char next_name[12];
+
+					fseek(fp, directory_address, SEEK_SET);
+					for(int i = 0; i < 16; i++)
+					{
+						memset(&dir[i],0,32);
+						fread(&dir[i],32,1,fp);
+					}
+
+					for(int i = 0; i < 16; i++){
+						strncpy( next_name, dir[i].DIR_Name, 11 );
+						if( (dir[i].DIR_Attr == 16 || dir[i].DIR_Attr == 32) &&  name!=next_name )
+						{
+							printf("Attribute: %d\n",dir[i].DIR_Attr);
+							printf("File Size: %d\n",dir[i].DIR_FileSize);
+							printf("Starting Cluster Number: %d\n",dir[i].DIR_FirstClusterLow);
+						}
+					}
+
+				}
+
+
+
+
+
+
+
 
     }
     return 0;
