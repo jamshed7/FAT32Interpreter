@@ -16,7 +16,7 @@
 #define maxCommandSize 255
 #define maxNumArguments 5
 #define whitespace " \t\n"
-
+#define rootAddress  1049600
 #define dot "."
 
 void signalHandler(int signum);
@@ -37,6 +37,8 @@ int32_t BPB_RootClus;
 int32_t RootDirSectors = 0;
 int32_t FirstDataSector = 0;
 int32_t FirstSectorofCluster = 0;
+
+int directoryAddress;
 
 //directory struct from FAT32 layout slide
 struct  __attribute__((__packed__)) DirectoryEntry
@@ -84,8 +86,16 @@ bool caseInsensitiveCompare(std::string A, std::string B){
       }
     }
   }
-
   return true;
+}
+
+std::string removeGarbage(char str[11]){
+  std::string cleanString;
+  char temp[12];
+  strncpy(temp, str, 11);
+  cleanString = temp;
+  boost::trim(cleanString);
+  return cleanString;
 }
 
 
@@ -96,8 +106,6 @@ int main(){
 
 		bool file_is_open = false;
 
-		int root_address;
-		int directory_address;
 
 
 
@@ -167,9 +175,8 @@ int main(){
 
 					//	initialize a variable to store the address of current working directory
           //	when image is first opened set current directory to root address
-					root_address = 1049600;
-          directory_address = root_address;
-          fseek( fp, directory_address, SEEK_SET );
+          directoryAddress = rootAddress;
+          fseek( fp, directoryAddress, SEEK_SET );
 
 					//	read the contents of the cluster
 					//	& intialize DirectoryEntry struct
@@ -200,7 +207,7 @@ int main(){
 
         //ls command
         if( tokenizedInput[0] == "ls" ){
-
+          int counter = 1;
           for( int i = 0; i < 16; i++ ){
 
             if( (dir[i].DIR_Attr == 1 || dir[i].DIR_Attr == 16 ||
@@ -212,38 +219,31 @@ int main(){
 									strncpy(temp, dir[i].DIR_Name, 11);
 									//convert back to string for printing
 									std::string name = temp;
-
+                  
                   if(!name.empty()){
-                    std::cout << i << ": " + name << std::endl;
+                    std::cout << counter << ": " + name << std::endl;
+                    ++counter;
                   }
                 }
           }
         }//ls ends here
 
-				if( tokenizedInput[0] == "cd" ){
+				if( tokenizedInput[0] == "cd"){
 
-					if( tokenizedInput[1] == "~" || tokenizedInput[1] == "~/" ){
-						directory_address = root_address;
-					}
-
-					std::string new_directory = tokenizedInput[1];
-					std::string current_directory;
-
-					//loop through to see if we get a match with existing directories
-					for(int i = 0; i < 16; i++){
-						current_directory = dir[i].DIR_Name;
-						if( new_directory == current_directory ){
-							directory_address = LBAToOffset(dir[i].DIR_FirstClusterLow);
-						}
-					}
-
-					for(int i = 0 ; i < 16 ; i++)
-  				{
-  					memset(&dir[i],0,32);
-  					fread(&dir[i],32,1,fp);
-  				}
-
-				}
+          std::string desiredDirectory = tokenizedInput[1];
+          for(int i = 0; i < 16; ++i){
+            std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
+            if(caseInsensitiveCompare(directoryAtCounter,desiredDirectory) == true){
+              std::cout << "Yo soy fiesta";
+              directoryAddress = LBAToOffset(dir[i].DIR_FirstClusterLow);
+            }
+				  }
+          fseek(fp, directoryAddress, SEEK_SET);
+          for(int i = 0; i < 16; ++i){
+            memset(&dir[i], 0, 32);
+            fread(&dir[i], 32, 1, fp);
+          }
+        }
 
     }
     return 0;
