@@ -5,8 +5,6 @@
 #include <vector>
 #include <csignal>
 #include <fstream>
-#include <cstdint>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -98,6 +96,20 @@ std::string removeGarbage(char str[11]){
   return cleanString;
 }
 
+std::string stringExpand(std::string str){
+  std::vector<std::string> fileNameSplit;
+  boost::split(fileNameSplit, str, boost::is_any_of(dot));
+  int requiredSpaces = 8 - fileNameSplit[0].size();
+  std::string requiredSpaceString;
+  for(int i = 0; i < requiredSpaces; ++i){
+    requiredSpaceString.append(" ");
+  }
+  std::string returnString = fileNameSplit[0];
+  returnString.append(requiredSpaceString);
+  returnString.append(fileNameSplit[1]);
+  
+  return returnString;
+}
 
 int main(){
     std::string commandLineInput;
@@ -106,6 +118,7 @@ int main(){
 
 		bool file_is_open = false;
 
+    std::cout << stringExpand("foo.txt") << std::endl;
 
 
 
