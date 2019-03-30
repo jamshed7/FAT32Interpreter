@@ -96,7 +96,10 @@ int main(){
 
 		bool file_is_open = false;
 
-    
+		int root_address;
+		int directory_address;
+
+
 
     while(true){
 
@@ -164,8 +167,8 @@ int main(){
 
 					//	initialize a variable to store the address of current working directory
           //	when image is first opened set current directory to root address
-					int root_address = 1049600;
-          int directory_address = root_address;
+					root_address = 1049600;
+          directory_address = root_address;
           fseek( fp, directory_address, SEEK_SET );
 
 					//	read the contents of the cluster
@@ -233,6 +236,13 @@ int main(){
 							directory_address = LBAToOffset(dir[i].DIR_FirstClusterLow);
 						}
 					}
+
+					for(int i = 0 ; i < 16 ; i++)
+  				{
+  					memset(&dir[i],0,32);
+  					fread(&dir[i],32,1,fp);
+  				}
+
 				}
 
     }
