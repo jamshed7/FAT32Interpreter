@@ -13,7 +13,7 @@
 #define maxCommandSize 255
 #define maxNumArguments 5
 #define whitespace " \t\n"
-#define rootAddress 1049600
+#define rootAddress 1049600 // (BPB_NumFATs * BPB_FATSz32 * BPB_BytsPerSec) + (BPB_RsvdSecCnt * BPB_BytsPerSec)
 #define dot "."
 
 std::FILE *fp;
