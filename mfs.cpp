@@ -70,8 +70,6 @@ int main()
 
   bool file_is_open = false;
 
-  std::cout << stringExpand("foo.txt") << std::endl;
-
   while (true)
   {
 
@@ -97,7 +95,7 @@ int main()
       }
       file_is_open = true;
 
-      fp = std::fopen(tokenizedInput[1].c_str(), "r");
+      fp = std::fopen(tokenizedInput[1].c_str(), "r+");
 
       if (fp == NULL)
       {
@@ -219,6 +217,34 @@ int main()
         memset(&dir[i], 0, 32);
         fread(&dir[i], 32, 1, fp);
       }
+    }
+
+    if (tokenizedInput[0] == "put")
+    {
+      int size, cluster;
+      for(int i = 0; i < 16; ++i){
+        if((dir[i].DIR_Name)[0] == '\xe5' || (dir[i].DIR_Name)[0] == '\x00')
+        {
+          std::cout << "found empty" << std::endl;
+          strcpy(dir[i].DIR_Name, "LILPUMP TXT");
+          size = dir[i].DIR_FileSize;
+          cluster = dir[i].DIR_FirstClusterLow;
+          dir[i].DIR_Attr = 16;
+        }
+      }
+      
+      int offset = LBAToOffset(cluster);
+      int nextBlock = cluster;
+      fseek(fp, offset, SEEK_SET);
+      char buffer[512] = "hello";
+
+      while(size > 512){
+        fwrite(buffer, 512, 1, fp);
+        nextBlock = NextLB(nextBlock);
+        fseek(fp,LBAToOffset(nextBlock),SEEK_SET);
+        size -= 512;
+      }
+
     }
 
     //stat command
