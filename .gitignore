@@ -1,2 +1,5 @@
 *.out
 *.o
+.vscode
+*.txt
+test.cpp
