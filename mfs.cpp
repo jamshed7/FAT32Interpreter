@@ -61,6 +61,7 @@ int16_t NextLB(uint32_t sector);
 bool caseInsensitiveCompare(std::string A, std::string B);
 std::string removeGarbage(char str[11]);
 std::string stringExpand(std::string str);
+void getFATToPWD(std::string file);
 
 int main()
 {
@@ -95,7 +96,7 @@ int main()
       }
       file_is_open = true;
 
-      fp = std::fopen(tokenizedInput[1].c_str(), "r+");
+      fp = std::fopen(tokenizedInput[1].c_str(), "rb+");
 
       if (fp == NULL)
       {
@@ -218,10 +219,15 @@ int main()
         fread(&dir[i], 32, 1, fp);
       }
     }
+    if (tokenizedInput[0] == "get")
+    {
+      getFATToPWD(tokenizedInput[1]);
+    }
 
     if (tokenizedInput[0] == "put")
     {
       int size, cluster;
+      int filePosition = -1;
       for(int i = 0; i < 16; ++i){
         if((dir[i].DIR_Name)[0] == '\xe5' || (dir[i].DIR_Name)[0] == '\x00')
         {
@@ -230,13 +236,16 @@ int main()
           size = dir[i].DIR_FileSize;
           cluster = dir[i].DIR_FirstClusterLow;
           dir[i].DIR_Attr = 16;
+          filePosition = i;
+          break;
         }
       }
       
       int offset = LBAToOffset(cluster);
       int nextBlock = cluster;
       fseek(fp, offset, SEEK_SET);
-      char buffer[512] = "hello";
+      fwrite(&dir[filePosition],32,1,fp);
+      char buffer[512] = "blaze it 69420";
 
       while(size > 512){
         fwrite(buffer, 512, 1, fp);
@@ -332,8 +341,40 @@ std::string stringExpand(std::string str)
   std::string returnString = fileNameSplit[0];
   returnString.append(requiredSpaceString);
   returnString.append(fileNameSplit[1]);
-
+  
+  boost::to_upper(returnString);
   return returnString;
+}
+
+void getFATToPWD(std::string file)
+{
+  int size, cluster;
+  std::string transformedString = stringExpand(file);
+  for (int i = 0; i < 16; ++i)
+  {
+    std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
+    if (caseInsensitiveCompare(directoryAtCounter, transformedString) == true && dir[i].DIR_Attr == 32)
+    {
+      size = dir[i].DIR_FileSize;
+      cluster = dir[i].DIR_FirstClusterLow;
+    }
+  }
+  FILE *pwdToFAT32 = fopen(file.c_str(), "wb");
+
+  fseek(fp, LBAToOffset(cluster), SEEK_SET);
+
+  char stringRead[512];
+  int nextBlock = cluster;
+  while (size > 512)
+  {
+    fread(stringRead, 512, 1, fp);
+    fwrite(stringRead, 512, 1, pwdToFAT32);
+    nextBlock = NextLB(nextBlock);
+    fseek(fp, LBAToOffset(nextBlock), SEEK_SET);
+    size -= 512;
+  }
+
+  fclose(pwdToFAT32);
 }
 
 void signalHandler(int signum) {}
