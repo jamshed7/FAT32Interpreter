@@ -236,26 +236,28 @@ int main()
       while(1){
         fseek(fp, (counter * 4) + (BPB_BytsPerSec * BPB_RsvdSecCnt), SEEK_SET);
         fread(&pointer, 2, 1, fp);
+        int mark = -1;
         if(pointer == 0){
           freeSectorIndex = counter;
+          fseek(fp,(counter * 4) + (BPB_BytsPerSec * BPB_RsvdSecCnt),SEEK_SET);
+          fwrite(&mark,2,1,fp);
           break;
         }
         ++counter;
       }
-      std::cout << freeSectorIndex << std::endl;
-      char stringRead[512] = "Adarsh";
+
+      char stringRead[7] = "QWERTY";
       int offset = LBAToOffset(freeSectorIndex);
       fseek(fp, offset, SEEK_SET);
-      fwrite(stringRead, 512, 1, fp);
-
+      fwrite(stringRead, 7, 1, fp);
       fseek(fp, directoryAddress, SEEK_SET);
       fseek(fp, findEmptyFile * 32, SEEK_CUR);
 
       strcpy(dir[findEmptyFile].DIR_Name, stringExpand(tokenizedInput[1]).c_str());
-      dir[findEmptyFile].DIR_Attr = 16;
+      dir[findEmptyFile].DIR_Attr = 32;
       dir[findEmptyFile].DIR_FirstClusterLow = freeSectorIndex;
-      fwrite(&dir[findEmptyFile], 512, 1, fp);
-      
+      dir[findEmptyFile].DIR_FileSize = 7;
+      fwrite(&dir[findEmptyFile], 32, 1, fp); 
     }
 
     //stat command
@@ -352,6 +354,7 @@ void getFATToPWD(std::string file)
 {
   int size, cluster;
   std::string transformedString = stringExpand(file);
+  std::cout << transformedString << std::endl;
   for (int i = 0; i < 16; ++i)
   {
     std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
@@ -364,7 +367,6 @@ void getFATToPWD(std::string file)
   FILE *pwdToFAT32 = fopen(file.c_str(), "wb");
 
   fseek(fp, LBAToOffset(cluster), SEEK_SET);
-
   char stringRead[512];
   int nextBlock = cluster;
   while (size > 512)
