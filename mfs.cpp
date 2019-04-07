@@ -69,6 +69,10 @@ int main()
   std::signal(SIGINT, signalHandler);
   std::signal(SIGTSTP, signalHandler);
 
+  //directory history
+	int History[5];
+	int history_count = 0;
+
   bool file_is_open = false;
 
   while (true)
@@ -143,6 +147,7 @@ int main()
       //	initialize a variable to store the address of current working directory
       //	when image is first opened set current directory to root address
       directoryAddress = rootAddress;
+      History[0] = rootAddress;
       fseek(fp, directoryAddress, SEEK_SET);
 
       //	read the contents of the cluster
@@ -200,18 +205,42 @@ int main()
       }
     } //ls ends here
 
+
+    //cd command
     if (tokenizedInput[0] == "cd")
     {
 
-      std::string desiredDirectory = tokenizedInput[1];
-      for (int i = 0; i < 16; ++i)
-      {
-        std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
-        if (caseInsensitiveCompare(directoryAtCounter, desiredDirectory) == true)
-        {
-          directoryAddress = LBAToOffset(dir[i].DIR_FirstClusterLow);
-        }
-      }
+			if(tokenizedInput[1] == "~" || tokenizedInput[1] == "/~")
+			{
+				directoryAddress = rootAddress;
+				History[0] = rootAddress;
+				history_count = 0;
+			}
+			else if( tokenizedInput[1] == "..")
+			{
+				if( history_count != 0)
+				{
+					history_count--;
+					directoryAddress = History[history_count];
+				}
+			}
+			else
+			{
+				std::string desiredDirectory = tokenizedInput[1];
+	      for (int i = 0; i < 16; ++i)
+	      {
+	        std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
+	        if (caseInsensitiveCompare(directoryAtCounter, desiredDirectory) == true)
+	        {
+	          directoryAddress = LBAToOffset(dir[i].DIR_FirstClusterLow);
+	        }
+	      }
+
+				history_count++;
+				History[history_count] = directoryAddress;
+
+			}
+
       fseek(fp, directoryAddress, SEEK_SET);
       for (int i = 0; i < 16; ++i)
       {
@@ -219,6 +248,7 @@ int main()
         fread(&dir[i], 32, 1, fp);
       }
     }
+
     if (tokenizedInput[0] == "get")
     {
       getFATToPWD(tokenizedInput[1]);
@@ -345,7 +375,7 @@ std::string stringExpand(std::string str)
   std::string returnString = fileNameSplit[0];
   returnString.append(requiredSpaceString);
   returnString.append(fileNameSplit[1]);
-  
+
   boost::to_upper(returnString);
   return returnString;
 }
