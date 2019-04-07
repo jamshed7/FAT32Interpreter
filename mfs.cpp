@@ -13,7 +13,7 @@
 #define maxCommandSize 255
 #define maxNumArguments 5
 #define whitespace " \t\n"
-#define rootAddress 1049600 // (BPB_NumFATs * BPB_FATSz32 * BPB_BytsPerSec) + (BPB_RsvdSecCnt * BPB_BytsPerSec)
+#define rootAddress 1049600
 #define dot "."
 
 std::FILE *fp;
@@ -226,34 +226,36 @@ int main()
 
     if (tokenizedInput[0] == "put")
     {
-      int size, cluster;
-      int filePosition = -1;
+      int findEmptyFile = -1, freeSectorIndex = -1, counter = 0, pointer = 0;
       for(int i = 0; i < 16; ++i){
-        if((dir[i].DIR_Name)[0] == '\xe5' || (dir[i].DIR_Name)[0] == '\x00')
-        {
-          std::cout << "found empty" << std::endl;
-          strcpy(dir[i].DIR_Name, "LILPUMP TXT");
-          size = dir[i].DIR_FileSize;
-          cluster = dir[i].DIR_FirstClusterLow;
-          dir[i].DIR_Attr = 16;
-          filePosition = i;
+        if(dir[i].DIR_Name[0] == '\xe5' || dir[i].DIR_Name[0] == '\x00'){
+          findEmptyFile = i;
           break;
         }
       }
-      
-      int offset = LBAToOffset(cluster);
-      int nextBlock = cluster;
-      fseek(fp, offset, SEEK_SET);
-      fwrite(&dir[filePosition],32,1,fp);
-      char buffer[512] = "blaze it 69420";
-
-      while(size > 512){
-        fwrite(buffer, 512, 1, fp);
-        nextBlock = NextLB(nextBlock);
-        fseek(fp,LBAToOffset(nextBlock),SEEK_SET);
-        size -= 512;
+      while(1){
+        fseek(fp, (counter * 4) + (BPB_BytsPerSec * BPB_RsvdSecCnt), SEEK_SET);
+        fread(&pointer, 2, 1, fp);
+        if(pointer == 0){
+          freeSectorIndex = counter;
+          break;
+        }
+        ++counter;
       }
+      std::cout << freeSectorIndex << std::endl;
+      char stringRead[512] = "Adarsh";
+      int offset = LBAToOffset(freeSectorIndex);
+      fseek(fp, offset, SEEK_SET);
+      fwrite(stringRead, 512, 1, fp);
 
+      fseek(fp, directoryAddress, SEEK_SET);
+      fseek(fp, findEmptyFile * 32, SEEK_CUR);
+
+      strcpy(dir[findEmptyFile].DIR_Name, stringExpand(tokenizedInput[1]).c_str());
+      dir[findEmptyFile].DIR_Attr = 16;
+      dir[findEmptyFile].DIR_FirstClusterLow = freeSectorIndex;
+      fwrite(&dir[findEmptyFile], 512, 1, fp);
+      
     }
 
     //stat command
