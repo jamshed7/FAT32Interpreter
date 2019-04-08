@@ -83,7 +83,6 @@ int main()
 
   while (true)
   {
-
     std::cout << "mfs>";
     std::getline(std::cin, commandLineInput);
     std::vector<std::string> tokenizedInput;
@@ -110,11 +109,8 @@ int main()
 
       if (fp == NULL)
       {
-        printf("Error: FAT32 image file not found!\n");
-      }
-      else
-      {
-        printf("FAT32 image file sucessfully opened.\n"); //remove later on2
+        std::cout << "Error: File system image not found." << std::endl;
+        continue;
       }
 
       //Get values for all our Variables
@@ -190,11 +186,8 @@ int main()
       for (int i = 0; i < 16; i++)
       {
 
-        if ((dir[i].DIR_Attr == 1 || dir[i].DIR_Attr == 16 ||
-             dir[i].DIR_Attr == 32) &&
-            (dir[i].DIR_Name[0] != 0))
+        if ( (dir[i].DIR_Attr == 32) && (dir[i].DIR_Name[0] != 0) )
         {
-
           char temp[12];
           memset(temp, 0, 12);
           // size 12 to accomodate NULL terminator
@@ -341,7 +334,7 @@ int main()
       }
       else
       {
-        std::cout << "Error: Invalid file name.\n" << std::endl;
+        std::cout << "Error: File not found" << std::endl;
       }
 
     }
@@ -349,16 +342,22 @@ int main()
     //stat command
     if (tokenizedInput[0] == "stat" && file_is_open)
     {
+      bool found = false;
       std::string desiredFile = stringExpand(tokenizedInput[1]);
       for (int i = 0; i < 16; i++)
       {
         std::string fileAtCounter = removeGarbage(dir[i].DIR_Name);
         if ( (dir[i].DIR_Attr == 16 || dir[i].DIR_Attr == 32) && desiredFile == fileAtCounter)
         {
+          found = true;
           printf("Attribute: %d\n", dir[i].DIR_Attr);
           printf("File Size: %d\n", dir[i].DIR_FileSize);
           printf("Starting Cluster Number: %d\n", dir[i].DIR_FirstClusterLow);
         }
+      }
+      if ( found == false )
+      {
+        std::cout << "Error: File not found" << std::endl;
       }
     }
   }
@@ -367,7 +366,8 @@ int main()
 
 int LBAToOffset(int32_t sector)
 {
-  return ((sector - 2) * BPB_BytsPerSec) + (BPB_BytsPerSec * BPB_RsvdSecCnt) + (BPB_NumFATs * BPB_FATSz32 * BPB_BytsPerSec);
+  return ((sector - 2) * BPB_BytsPerSec) + (BPB_BytsPerSec * BPB_RsvdSecCnt)
+          + (BPB_NumFATs * BPB_FATSz32 * BPB_BytsPerSec);
 }
 
 int16_t NextLB(uint32_t sector)
@@ -431,30 +431,44 @@ void getFATToPWD(std::string file)
   int size, cluster;
   std::string transformedString = stringExpand(file);
   std::cout << transformedString << std::endl;
+  bool found = false;
+
   for (int i = 0; i < 16; ++i)
   {
     std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
-    if (caseInsensitiveCompare(directoryAtCounter, transformedString) == true && dir[i].DIR_Attr == 32)
+    if ( (caseInsensitiveCompare(directoryAtCounter, transformedString) == true) && (dir[i].DIR_Attr == 32) )
     {
+      found = true;
       size = dir[i].DIR_FileSize;
       cluster = dir[i].DIR_FirstClusterLow;
     }
   }
-  FILE *pwdToFAT32 = fopen(file.c_str(), "wb");
 
-  fseek(fp, LBAToOffset(cluster), SEEK_SET);
-  char stringRead[512];
-  int nextBlock = cluster;
-  while (size > 512)
+  if(found == true)
   {
-    fread(stringRead, 512, 1, fp);
-    fwrite(stringRead, 512, 1, pwdToFAT32);
-    nextBlock = NextLB(nextBlock);
-    fseek(fp, LBAToOffset(nextBlock), SEEK_SET);
-    size -= 512;
-  }
+    FILE *pwdToFAT32 = fopen(file.c_str(), "wb");
 
-  fclose(pwdToFAT32);
+    fseek(fp, LBAToOffset(cluster), SEEK_SET);
+    char stringRead[512];
+    int nextBlock = cluster;
+
+    while (size > 512)
+    {
+      fread(stringRead, 512, 1, fp);
+      fwrite(stringRead, 512, 1, pwdToFAT32);
+      nextBlock = NextLB(nextBlock);
+      fseek(fp, LBAToOffset(nextBlock), SEEK_SET);
+      size -= 512;
+    }
+    
+    fread(stringRead, size, 1, fp);
+    fwrite(stringRead, size, 1, pwdToFAT32);
+
+    fclose(pwdToFAT32);
+    fclose(fp);
+    fp = fopen("fat32.img","rb+");
+
+  }
 }
 
 void signalHandler(int signum) {}
