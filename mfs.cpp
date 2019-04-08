@@ -1,3 +1,10 @@
+/*
+    Name: Jamshed Jahangir
+    ID: 1001366821
+
+    Name: Adarsh Pai
+    ID: 1001530167
+*/
 
 #include <iostream>
 #include <cstring>
