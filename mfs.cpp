@@ -336,7 +336,7 @@ int main()
         for( int i = 0; i < atoi(tokenizedInput[3].c_str()); i++)
         {
           fread(&output, 1, 1, fp);
-          printf("%d\n", output);
+          printf("%x\n", output);
         }
       }
       else
@@ -350,14 +350,6 @@ int main()
     if (tokenizedInput[0] == "stat" && file_is_open)
     {
       std::string desiredFile = stringExpand(tokenizedInput[1]);
-
-      fseek(fp, directoryAddress, SEEK_SET);
-      for (int i = 0; i < 16; i++)
-      {
-        memset(&dir[i], 0, 32);
-        fread(&dir[i], 32, 1, fp);
-      }
-
       for (int i = 0; i < 16; i++)
       {
         std::string fileAtCounter = removeGarbage(dir[i].DIR_Name);
