@@ -53,12 +53,18 @@ void signalHandler(int signum);
 //	Returns the starting address of a block of data given the sector number
 //	corresponding to that data block
 int LBAToOffset(int32_t sector);
+
 //Reference: FAT32.pdf
 //	Given a logical block address, look up into the first FAT and return the
 //	logical block address of the block in the file
 //	Return -1 if when no further blocks to return
 int16_t NextLB(uint32_t sector);
+
+//  Function to compare to two string while being case insensitive
 bool caseInsensitiveCompare(std::string A, std::string B);
+
+//  Function to remove garbage values from the end of file names
+//  & trim file names to 11 characters
 std::string removeGarbage(char str[11]);
 std::string stringExpand(std::string str);
 void getFATToPWD(std::string file);
@@ -167,7 +173,7 @@ int main()
     }
 
     //Info Command
-    if (tokenizedInput[0] == "info")
+    if (tokenizedInput[0] == "info"  && file_is_open)
     {
       printf("                 Decimal  Hexadecimal\n");
       printf("BPB_BytsPerSec:  %d \t  %x\n", BPB_BytsPerSec, BPB_BytsPerSec);
@@ -178,7 +184,7 @@ int main()
     }
 
     //ls command
-    if (tokenizedInput[0] == "ls")
+    if (tokenizedInput[0] == "ls" && file_is_open)
     {
       int counter = 1;
       for (int i = 0; i < 16; i++)
@@ -207,7 +213,7 @@ int main()
 
 
     //cd command
-    if (tokenizedInput[0] == "cd")
+    if (tokenizedInput[0] == "cd" && file_is_open)
     {
 
 			if(tokenizedInput[1] == "~" || tokenizedInput[1] == "/~")
@@ -249,12 +255,12 @@ int main()
       }
     }
 
-    if (tokenizedInput[0] == "get")
+    if (tokenizedInput[0] == "get" && file_is_open)
     {
       getFATToPWD(tokenizedInput[1]);
     }
 
-    if (tokenizedInput[0] == "put")
+    if (tokenizedInput[0] == "put" && file_is_open)
     {
       int findEmptyFile = -1, freeSectorIndex = -1, counter = 0, pointer = 0;
       for(int i = 0; i < 16; ++i){
@@ -287,15 +293,63 @@ int main()
       dir[findEmptyFile].DIR_Attr = 32;
       dir[findEmptyFile].DIR_FirstClusterLow = freeSectorIndex;
       dir[findEmptyFile].DIR_FileSize = 7;
-      fwrite(&dir[findEmptyFile], 32, 1, fp); 
+      fwrite(&dir[findEmptyFile], 32, 1, fp);
+    }
+
+
+    //Read command
+    if (tokenizedInput[0] == "read" && file_is_open)
+    {
+      int target;
+
+      std::string desiredFile = stringExpand(tokenizedInput[1]);
+      bool found = false;
+      int position = atoi(tokenizedInput[2].c_str());
+
+      for (int i = 0; i < 16; ++i)
+      {
+        std::string fileAtCounter = removeGarbage(dir[i].DIR_Name);
+        if (caseInsensitiveCompare(fileAtCounter, desiredFile) == true)
+        {
+          target = dir[i].DIR_FirstClusterLow;
+          found = true;
+        }
+      }
+
+      if(found == true)
+      {
+        int file_offset = LBAToOffset( target );
+        fseek(fp, file_offset, SEEK_SET);
+
+        while (position > BPB_BytsPerSec)
+        {
+          target = NextLB(target);
+          position -=BPB_BytsPerSec;
+        }
+
+        file_offset = LBAToOffset(target);
+
+        fseek(fp, file_offset+position, SEEK_SET);
+
+        int output;
+
+        for( int i = 0; i < atoi(tokenizedInput[3].c_str()); i++)
+        {
+          fread(&output, 1, 1, fp);
+          printf("%d\n", output);
+        }
+      }
+      else
+      {
+        std::cout << "Error: Invalid file name.\n" << std::endl;
+      }
+
     }
 
     //stat command
-    if (tokenizedInput[0] == "stat")
+    if (tokenizedInput[0] == "stat" && file_is_open)
     {
-
-      std::string name = tokenizedInput[1];
-      char next_name[12];
+      std::string desiredFile = stringExpand(tokenizedInput[1]);
 
       fseek(fp, directoryAddress, SEEK_SET);
       for (int i = 0; i < 16; i++)
@@ -306,8 +360,8 @@ int main()
 
       for (int i = 0; i < 16; i++)
       {
-        strncpy(next_name, dir[i].DIR_Name, 11);
-        if ((dir[i].DIR_Attr == 16 || dir[i].DIR_Attr == 32) && name != next_name)
+        std::string fileAtCounter = removeGarbage(dir[i].DIR_Name);
+        if ( (dir[i].DIR_Attr == 16 || dir[i].DIR_Attr == 32) && desiredFile == fileAtCounter)
         {
           printf("Attribute: %d\n", dir[i].DIR_Attr);
           printf("File Size: %d\n", dir[i].DIR_FileSize);
