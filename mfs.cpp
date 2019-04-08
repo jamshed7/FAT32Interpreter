@@ -107,7 +107,6 @@ int main()
         std::cout << "Error: File system image already open." << '\n';
         continue;
       }
-      file_is_open = true;
 
       fp = std::fopen(tokenizedInput[1].c_str(), "rb+");
 
@@ -115,6 +114,10 @@ int main()
       {
         std::cout << "Error: File system image not found." << std::endl;
         continue;
+      }
+      else
+      {
+        file_is_open = true;
       }
 
       //Get values for all our Variables
@@ -367,6 +370,7 @@ int main()
           printf("Attribute: %d\n", dir[i].DIR_Attr);
           printf("File Size: %d\n", dir[i].DIR_FileSize);
           printf("Starting Cluster Number: %d\n", dir[i].DIR_FirstClusterLow);
+          continue;
         }
       }
       if (found == false)
