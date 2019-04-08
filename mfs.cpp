@@ -214,14 +214,14 @@ int main()
     //cd command
     if (tokenizedInput[0] == "cd" && file_is_open)
     {
-
+      //absolute paths
       if (tokenizedInput[1] == "~" || tokenizedInput[1] == "/~")
       {
         directoryAddress = rootAddress;
         History[0] = rootAddress;
         history_count = 0;
       }
-      else if (tokenizedInput[1] == "..")
+      else if (tokenizedInput[1] == "..") //to return to previous directory
       {
         if (history_count != 0)
         {
@@ -237,6 +237,7 @@ int main()
           std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
           if (caseInsensitiveCompare(directoryAtCounter, desiredDirectory) == true)
           {
+            //  update directoryAddress with required offset
             directoryAddress = LBAToOffset(dir[i].DIR_FirstClusterLow);
           }
         }
@@ -244,7 +245,7 @@ int main()
         history_count++;
         History[history_count] = directoryAddress;
       }
-
+      //  Update directory struct
       fseek(fp, directoryAddress, SEEK_SET);
       for (int i = 0; i < 16; ++i)
       {
