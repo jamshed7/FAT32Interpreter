@@ -9,6 +9,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <string>
+#include <fstream>
+#include <streambuf>
 
 #define maxCommandSize 255
 #define maxNumArguments 5
@@ -199,6 +202,7 @@ int main()
           if (!name.empty())
           {
             std::cout << counter << ": " + name << std::endl;
+            std::cout << dir[i].DIR_FileSize << std::endl;
             ++counter;
           }
         }
@@ -276,17 +280,18 @@ int main()
         ++counter;
       }
 
-      char stringRead[7] = "QWERTY";
+      std::ifstream PWDToFAT32(tokenizedInput[1].c_str());
+      std::string stringRead((std::istreambuf_iterator<char>(PWDToFAT32)),std::istreambuf_iterator<char>());
       int offset = LBAToOffset(freeSectorIndex);
       fseek(fp, offset, SEEK_SET);
-      fwrite(stringRead, 7, 1, fp);
+      fwrite(stringRead.c_str(), stringRead.size(), 1, fp);
       fseek(fp, directoryAddress, SEEK_SET);
       fseek(fp, findEmptyFile * 32, SEEK_CUR);
 
       strcpy(dir[findEmptyFile].DIR_Name, stringExpand(tokenizedInput[1]).c_str());
       dir[findEmptyFile].DIR_Attr = 32;
       dir[findEmptyFile].DIR_FirstClusterLow = freeSectorIndex;
-      dir[findEmptyFile].DIR_FileSize = 7;
+      dir[findEmptyFile].DIR_FileSize = stringRead.size();
       fwrite(&dir[findEmptyFile], 32, 1, fp); 
     }
 
@@ -397,8 +402,9 @@ void getFATToPWD(std::string file)
   FILE *pwdToFAT32 = fopen(file.c_str(), "wb");
 
   fseek(fp, LBAToOffset(cluster), SEEK_SET);
-  char stringRead[512];
+  char stringRead[size];
   int nextBlock = cluster;
+  
   while (size > 512)
   {
     fread(stringRead, 512, 1, fp);
