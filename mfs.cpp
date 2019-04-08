@@ -189,7 +189,7 @@ int main()
       for (int i = 0; i < 16; i++)
       {
 
-        if ( (dir[i].DIR_Attr == 32) && (dir[i].DIR_Name[0] != 0) )
+        if ( (dir[i].DIR_Attr == 32 || dir[i].DIR_Attr == 16) && (dir[i].DIR_Name[0] != 0) )
         {
           char temp[12];
           memset(temp, 0, 12);
@@ -201,7 +201,6 @@ int main()
           if (!name.empty())
           {
             std::cout << counter << ": " + name << std::endl;
-            std::cout << dir[i].DIR_FileSize << std::endl;
             ++counter;
           }
         }
@@ -282,8 +281,19 @@ int main()
       std::ifstream PWDToFAT32(tokenizedInput[1].c_str());
       std::string stringRead((std::istreambuf_iterator<char>(PWDToFAT32)),std::istreambuf_iterator<char>());
       int offset = LBAToOffset(freeSectorIndex);
+      std::vector<std::string> pages;
+      for(int i = 0; i < stringRead.size(); i+=512){
+        pages.push_back(stringRead.substr(i,512));
+      }
+      for(int i = 0; i < pages.size(); ++i){
+        std::cout << pages[i] << std::endl;
+      }
+
       fseek(fp, offset, SEEK_SET);
-      fwrite(stringRead.c_str(), stringRead.size(), 1, fp);
+      for(int i = 0; i < pages.size(); ++i){
+        fwrite(&pages[i], 1, 1, fp);
+      }
+      //fwrite(stringRead.c_str(), stringRead.size(), 1, fp);
       fseek(fp, directoryAddress, SEEK_SET);
       fseek(fp, findEmptyFile * 32, SEEK_CUR);
 
@@ -443,6 +453,7 @@ void getFATToPWD(std::string file)
     std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
     if ( (caseInsensitiveCompare(directoryAtCounter, transformedString) == true) && (dir[i].DIR_Attr == 32) )
     {
+      std::cout << "Fucking found" << std::endl;
       found = true;
       size = dir[i].DIR_FileSize;
       cluster = dir[i].DIR_FirstClusterLow;
