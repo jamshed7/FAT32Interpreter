@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
@@ -79,8 +80,8 @@ int main()
   std::signal(SIGTSTP, signalHandler);
 
   //directory history
-	int History[5];
-	int history_count = 0;
+  int History[5];
+  int history_count = 0;
 
   bool file_is_open = false;
 
@@ -172,7 +173,7 @@ int main()
     }
 
     //Info Command
-    if (tokenizedInput[0] == "info"  && file_is_open)
+    if (tokenizedInput[0] == "info" && file_is_open)
     {
       printf("                 Decimal  Hexadecimal\n");
       printf("BPB_BytsPerSec:  %d \t  %x\n", BPB_BytsPerSec, BPB_BytsPerSec);
@@ -189,7 +190,7 @@ int main()
       for (int i = 0; i < 16; i++)
       {
 
-        if ( (dir[i].DIR_Attr == 32 || dir[i].DIR_Attr == 16) && (dir[i].DIR_Name[0] != 0) )
+        if ((dir[i].DIR_Attr == 32 || dir[i].DIR_Attr == 16) && (dir[i].DIR_Name[0] != 0))
         {
           char temp[12];
           memset(temp, 0, 12);
@@ -207,41 +208,39 @@ int main()
       }
     } //ls ends here
 
-
     //cd command
     if (tokenizedInput[0] == "cd" && file_is_open)
     {
 
-			if(tokenizedInput[1] == "~" || tokenizedInput[1] == "/~")
-			{
-				directoryAddress = rootAddress;
-				History[0] = rootAddress;
-				history_count = 0;
-			}
-			else if( tokenizedInput[1] == "..")
-			{
-				if( history_count != 0)
-				{
-					history_count--;
-					directoryAddress = History[history_count];
-				}
-			}
-			else
-			{
-				std::string desiredDirectory = tokenizedInput[1];
-	      for (int i = 0; i < 16; ++i)
-	      {
-	        std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
-	        if (caseInsensitiveCompare(directoryAtCounter, desiredDirectory) == true)
-	        {
-	          directoryAddress = LBAToOffset(dir[i].DIR_FirstClusterLow);
-	        }
-	      }
+      if (tokenizedInput[1] == "~" || tokenizedInput[1] == "/~")
+      {
+        directoryAddress = rootAddress;
+        History[0] = rootAddress;
+        history_count = 0;
+      }
+      else if (tokenizedInput[1] == "..")
+      {
+        if (history_count != 0)
+        {
+          history_count--;
+          directoryAddress = History[history_count];
+        }
+      }
+      else
+      {
+        std::string desiredDirectory = tokenizedInput[1];
+        for (int i = 0; i < 16; ++i)
+        {
+          std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
+          if (caseInsensitiveCompare(directoryAtCounter, desiredDirectory) == true)
+          {
+            directoryAddress = LBAToOffset(dir[i].DIR_FirstClusterLow);
+          }
+        }
 
-				history_count++;
-				History[history_count] = directoryAddress;
-
-			}
+        history_count++;
+        History[history_count] = directoryAddress;
+      }
 
       fseek(fp, directoryAddress, SEEK_SET);
       for (int i = 0; i < 16; ++i)
@@ -258,42 +257,44 @@ int main()
 
     if (tokenizedInput[0] == "put" && file_is_open)
     {
-       int findEmptyFile = -1, freeSectorIndex = -1, counter = 0, pointer = 0;
-      for(int i = 0; i < 16; ++i){
-        if(dir[i].DIR_Name[0] == '\xe5' || dir[i].DIR_Name[0] == '\x00'){
+      int findEmptyFile = -1, freeSectorIndex = -1, counter = 0, pointer = 0;
+      for (int i = 0; i < 16; ++i)
+      {
+        if (dir[i].DIR_Name[0] == '\xe5' || dir[i].DIR_Name[0] == '\x00')
+        {
           findEmptyFile = i;
           break;
         }
       }
-      while(1){
+      while (1)
+      {
         fseek(fp, (counter * 4) + (BPB_BytsPerSec * BPB_RsvdSecCnt), SEEK_SET);
         fread(&pointer, 2, 1, fp);
         int mark = -1;
-        if(pointer == 0){
+        if (pointer == 0)
+        {
           freeSectorIndex = counter;
-          fseek(fp,(counter * 4) + (BPB_BytsPerSec * BPB_RsvdSecCnt),SEEK_SET);
-          fwrite(&mark,2,1,fp);
+          fseek(fp, (counter * 4) + (BPB_BytsPerSec * BPB_RsvdSecCnt), SEEK_SET);
+          fwrite(&mark, 2, 1, fp);
           break;
         }
         ++counter;
       }
 
       std::ifstream PWDToFAT32(tokenizedInput[1].c_str());
-      std::string stringRead((std::istreambuf_iterator<char>(PWDToFAT32)),std::istreambuf_iterator<char>());
+      std::string stringRead((std::istreambuf_iterator<char>(PWDToFAT32)), std::istreambuf_iterator<char>());
       int offset = LBAToOffset(freeSectorIndex);
       std::vector<std::string> pages;
-      for(int i = 0; i < stringRead.size(); i+=512){
-        pages.push_back(stringRead.substr(i,512));
+      for (int i = 0; i < stringRead.size(); i += 512)
+      {
+        pages.push_back(stringRead.substr(i, 512));
       }
-      for(int i = 0; i < pages.size(); ++i){
-        std::cout << pages[i] << std::endl;
-      }
-
+      PWDToFAT32.close();
       fseek(fp, offset, SEEK_SET);
-      for(int i = 0; i < pages.size(); ++i){
-        fwrite(&pages[i], 1, 1, fp);
+      for (int i = 0; i < pages.size(); ++i)
+      {
+        fwrite(pages[i].c_str(), 512, 1, fp);
       }
-      //fwrite(stringRead.c_str(), stringRead.size(), 1, fp);
       fseek(fp, directoryAddress, SEEK_SET);
       fseek(fp, findEmptyFile * 32, SEEK_CUR);
 
@@ -301,9 +302,8 @@ int main()
       dir[findEmptyFile].DIR_Attr = 32;
       dir[findEmptyFile].DIR_FirstClusterLow = freeSectorIndex;
       dir[findEmptyFile].DIR_FileSize = stringRead.size();
-      fwrite(&dir[findEmptyFile], 32, 1, fp); 
+      fwrite(&dir[findEmptyFile], 32, 1, fp);
     }
-
 
     //Read command
     if (tokenizedInput[0] == "read" && file_is_open)
@@ -324,24 +324,24 @@ int main()
         }
       }
 
-      if(found == true)
+      if (found == true)
       {
-        int file_offset = LBAToOffset( target );
+        int file_offset = LBAToOffset(target);
         fseek(fp, file_offset, SEEK_SET);
 
         while (position > BPB_BytsPerSec)
         {
           target = NextLB(target);
-          position -=BPB_BytsPerSec;
+          position -= BPB_BytsPerSec;
         }
 
         file_offset = LBAToOffset(target);
 
-        fseek(fp, file_offset+position, SEEK_SET);
+        fseek(fp, file_offset + position, SEEK_SET);
 
         int output;
 
-        for( int i = 0; i < atoi(tokenizedInput[3].c_str()); i++)
+        for (int i = 0; i < atoi(tokenizedInput[3].c_str()); i++)
         {
           fread(&output, 1, 1, fp);
           printf("%x\n", output);
@@ -351,7 +351,6 @@ int main()
       {
         std::cout << "Error: File not found" << std::endl;
       }
-
     }
 
     //stat command
@@ -362,7 +361,7 @@ int main()
       for (int i = 0; i < 16; i++)
       {
         std::string fileAtCounter = removeGarbage(dir[i].DIR_Name);
-        if ( (dir[i].DIR_Attr == 16 || dir[i].DIR_Attr == 32) && desiredFile == fileAtCounter)
+        if ((dir[i].DIR_Attr == 16 || dir[i].DIR_Attr == 32) && desiredFile == fileAtCounter)
         {
           found = true;
           printf("Attribute: %d\n", dir[i].DIR_Attr);
@@ -370,7 +369,7 @@ int main()
           printf("Starting Cluster Number: %d\n", dir[i].DIR_FirstClusterLow);
         }
       }
-      if ( found == false )
+      if (found == false)
       {
         std::cout << "Error: File not found" << std::endl;
       }
@@ -381,8 +380,7 @@ int main()
 
 int LBAToOffset(int32_t sector)
 {
-  return ((sector - 2) * BPB_BytsPerSec) + (BPB_BytsPerSec * BPB_RsvdSecCnt)
-          + (BPB_NumFATs * BPB_FATSz32 * BPB_BytsPerSec);
+  return ((sector - 2) * BPB_BytsPerSec) + (BPB_BytsPerSec * BPB_RsvdSecCnt) + (BPB_NumFATs * BPB_FATSz32 * BPB_BytsPerSec);
 }
 
 int16_t NextLB(uint32_t sector)
@@ -445,39 +443,37 @@ void getFATToPWD(std::string file)
 {
   int size, cluster;
   std::string transformedString = stringExpand(file);
-  std::cout << transformedString << std::endl;
   bool found = false;
 
   for (int i = 0; i < 16; ++i)
   {
     std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
-    if ( (caseInsensitiveCompare(directoryAtCounter, transformedString) == true) && (dir[i].DIR_Attr == 32) )
+    if ((caseInsensitiveCompare(directoryAtCounter, transformedString) == true) && (dir[i].DIR_Attr == 32))
     {
-      std::cout << "Fucking found" << std::endl;
       found = true;
       size = dir[i].DIR_FileSize;
       cluster = dir[i].DIR_FirstClusterLow;
     }
   }
 
-  if(found == true)
+  if (found == true)
   {
     FILE *pwdToFAT32 = fopen(file.c_str(), "wb");
 
     fseek(fp, LBAToOffset(cluster), SEEK_SET);
     char stringRead[size];
     int nextBlock = cluster;
-    for(int i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i)
+    {
       fread(&stringRead[i], 1, 1, fp);
     }
-    for(int i = 0; i < size; ++i){
-      std::cout << stringRead[i] << std::endl;
+    for (int i = 0; i < size; ++i)
+    {
       fwrite(&stringRead[i], 1, 1, pwdToFAT32);
     }
     fclose(pwdToFAT32);
     fclose(fp);
-    fp = fopen("fat32.img","rb+");
-
+    fp = fopen("fat32.img", "rb+");
   }
 }
 
