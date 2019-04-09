@@ -1,12 +1,11 @@
 CPP = g++
-CPPFlags = -Wall
 all: mfs
 
-mfs: mfs.cpp
-	$(CPP) $(CPPlags) mfs.cpp -o mfs
+mfs: mfs.c
+	$(CPP) mfs.c -o mfs && mkdir build/ && cp mfs build/ && rm -f mfs
 
 run:
-	./mfs
+	./build/mfs
 
 clean:
-	rm -f *.o mfs *.out
+	rm -rf build && rm -f *.txt

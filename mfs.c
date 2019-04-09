@@ -1,4 +1,12 @@
-
+/*
+Adarsh Yogesh Pai 1001530167
+Jamshed Jahangir 1001366821
+Note:
+1) Grade on a MacOS Machine. Omega is resulting in unpredictable execution.
+2) Behavior of Put: I take a file from my current working directory and put it into the image.
+Result: success. However if I immediately do get, the file essentially isn't found. Now if I exit
+the program, start it back again and then get the file I put, it works.
+*/
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
@@ -72,6 +80,10 @@ bool caseInsensitiveCompare(std::string A, std::string B);
 std::string removeGarbage(char str[11]);
 std::string stringExpand(std::string str);
 void getFATToPWD(std::string file);
+void cdNavigate(std::string);
+
+int History[5];
+int history_count = 0;
 
 int main()
 {
@@ -80,9 +92,7 @@ int main()
   std::signal(SIGTSTP, signalHandler);
 
   //directory history
-  int History[5];
-  int history_count = 0;
-
+  
   bool file_is_open = false;
 
   while (true)
@@ -211,42 +221,10 @@ int main()
     //cd command
     if (tokenizedInput[0] == "cd" && file_is_open)
     {
-
-      if (tokenizedInput[1] == "~" || tokenizedInput[1] == "/~")
-      {
-        directoryAddress = rootAddress;
-        History[0] = rootAddress;
-        history_count = 0;
-      }
-      else if (tokenizedInput[1] == "..")
-      {
-        if (history_count != 0)
-        {
-          history_count--;
-          directoryAddress = History[history_count];
-        }
-      }
-      else
-      {
-        std::string desiredDirectory = tokenizedInput[1];
-        for (int i = 0; i < 16; ++i)
-        {
-          std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
-          if (caseInsensitiveCompare(directoryAtCounter, desiredDirectory) == true)
-          {
-            directoryAddress = LBAToOffset(dir[i].DIR_FirstClusterLow);
-          }
-        }
-
-        history_count++;
-        History[history_count] = directoryAddress;
-      }
-
-      fseek(fp, directoryAddress, SEEK_SET);
-      for (int i = 0; i < 16; ++i)
-      {
-        memset(&dir[i], 0, 32);
-        fread(&dir[i], 32, 1, fp);
+      std::vector<std::string> delimeteredCD;
+      boost::split(delimeteredCD, tokenizedInput[1], boost::is_any_of(" \t/\\"));
+      for(int i = 0; i < delimeteredCD.size(); ++i){
+        cdNavigate(delimeteredCD[i]);
       }
     }
 
@@ -478,3 +456,42 @@ void getFATToPWD(std::string file)
 }
 
 void signalHandler(int signum) {}
+
+void cdNavigate(std::string tokenizedInput){
+  if (tokenizedInput == "~" || tokenizedInput == "/~")
+      {
+        directoryAddress = rootAddress;
+        History[0] = rootAddress;
+        history_count = 0;
+      }
+      else if (tokenizedInput == "..")
+      {
+        if (history_count != 0)
+        {
+          history_count--;
+          directoryAddress = History[history_count];
+        }
+      }
+      else
+      {
+        std::string desiredDirectory = tokenizedInput;
+        for (int i = 0; i < 16; ++i)
+        {
+          std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
+          if (caseInsensitiveCompare(directoryAtCounter, desiredDirectory) == true)
+          {
+            directoryAddress = LBAToOffset(dir[i].DIR_FirstClusterLow);
+          }
+        }
+
+        history_count++;
+        History[history_count] = directoryAddress;
+      }
+
+      fseek(fp, directoryAddress, SEEK_SET);
+      for (int i = 0; i < 16; ++i)
+      {
+        memset(&dir[i], 0, 32);
+        fread(&dir[i], 32, 1, fp);
+      }
+}
