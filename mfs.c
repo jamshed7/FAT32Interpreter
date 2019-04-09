@@ -224,50 +224,10 @@ int main()
     //cd command
     if (tokenizedInput[0] == "cd" && file_is_open)
     {
-<<<<<<< HEAD:mfs.c
       std::vector<std::string> delimeteredCD;
       boost::split(delimeteredCD, tokenizedInput[1], boost::is_any_of(" \t/\\"));
       for(int i = 0; i < delimeteredCD.size(); ++i){
         cdNavigate(delimeteredCD[i]);
-=======
-      //absolute paths
-      if (tokenizedInput[1] == "~" || tokenizedInput[1] == "/~")
-      {
-        directoryAddress = rootAddress;
-        History[0] = rootAddress;
-        history_count = 0;
-      }
-      else if (tokenizedInput[1] == "..") //to return to previous directory
-      {
-        if (history_count != 0)
-        {
-          history_count--;
-          directoryAddress = History[history_count];
-        }
-      }
-      else
-      {
-        std::string desiredDirectory = tokenizedInput[1];
-        for (int i = 0; i < 16; ++i)
-        {
-          std::string directoryAtCounter = removeGarbage(dir[i].DIR_Name);
-          if (caseInsensitiveCompare(directoryAtCounter, desiredDirectory) == true)
-          {
-            //  update directoryAddress with required offset
-            directoryAddress = LBAToOffset(dir[i].DIR_FirstClusterLow);
-          }
-        }
-
-        history_count++;
-        History[history_count] = directoryAddress;
-      }
-      //  Update directory struct
-      fseek(fp, directoryAddress, SEEK_SET);
-      for (int i = 0; i < 16; ++i)
-      {
-        memset(&dir[i], 0, 32);
-        fread(&dir[i], 32, 1, fp);
->>>>>>> 4c773f3b2403b1f0c8e2fe69737af6e1d78a0375:mfs.cpp
       }
     }
 
